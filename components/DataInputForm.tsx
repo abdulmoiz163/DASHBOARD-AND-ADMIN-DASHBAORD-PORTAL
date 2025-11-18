@@ -6,47 +6,77 @@ import { months, type EHSData, type AdminData, type MonthlyData } from '@/lib/da
 
 interface DataInputFormProps {
   category: string
-  ehsData: EHSData
+  ehsData: EHSData | null
   adminData: AdminData | null
   onClose: () => void
-  onSave: (data: EHSData | AdminData) => void
+  onSave: (data: EHSData | Partial<AdminData>) => void
 }
 
 export default function DataInputForm({ category, ehsData, adminData, onClose, onSave }: DataInputFormProps) {
   const [formData, setFormData] = useState<Record<string, MonthlyData>>({})
 
   const getCategoryData = () => {
-    switch (category) {
-      case 'ehs-core':
-        return {
-          'Total Number of Accidents': ehsData.accidents,
-          'Number of First Aid Cases': ehsData.firstAidCases,
-          'Number of Medical Cases': ehsData.medicalCases,
-          'Number of Ill Health Cases': ehsData.illHealthCases,
-          'Number of Lost Time Accident Cases': ehsData.lostTimeAccidents,
-          'Number of EHS Walks': ehsData.ehsWalks,
-          'Number of EHS Risk Assessments': ehsData.ehsRiskAssessments,
-        }
-      case 'training-hazards':
-        return {
-          'Target Training Hours': ehsData.trainingHours.target,
-          'Actual Training Hours': ehsData.trainingHours.actual,
-          'Target Hazard Reporting': ehsData.hazardReporting.target,
-          'Actual Number of Hazards Reported': ehsData.hazardReporting.actual,
-          'Actual Near Misses Reported': ehsData.nearMisses,
-          'Target Leading Indicator Index (LII)': ehsData.leadingIndicatorIndex.target,
-        }
-      case 'consumption':
-        return {
-          'Total Electricity Consumed (KWH)': ehsData.electricityConsumed,
-          'Total Gas Consumed (meter cube)': ehsData.gasConsumed,
-          'Water Consumption (US Gallons)': ehsData.waterConsumption,
-          'Number of Paper Sheets Consumed': ehsData.paperSheetsConsumed,
-          'Carbon Footprint': ehsData.carbonFootprint,
-        }
-      default:
-        return {}
+    if (ehsData) {
+      switch (category) {
+        case 'ehs-core':
+          return {
+            'Total Number of Accidents': ehsData.accidents,
+            'Number of First Aid Cases': ehsData.firstAidCases,
+            'Number of Medical Cases': ehsData.medicalCases,
+            'Number of Ill Health Cases': ehsData.illHealthCases,
+            'Number of Lost Time Accident Cases': ehsData.lostTimeAccidents,
+            'Number of EHS Walks': ehsData.ehsWalks,
+            'Number of EHS Risk Assessments': ehsData.ehsRiskAssessments,
+          }
+        case 'training-hazards':
+          return {
+            'Target Training Hours': ehsData.trainingHours.target,
+            'Actual Training Hours': ehsData.trainingHours.actual,
+            'Target Hazard Reporting': ehsData.hazardReporting.target,
+            'Actual Number of Hazards Reported': ehsData.hazardReporting.actual,
+            'Actual Near Misses Reported': ehsData.nearMisses,
+            'Target Leading Indicator Index (LII)': ehsData.leadingIndicatorIndex.target,
+          }
+        case 'consumption':
+          return {
+            'Total Electricity Consumed (KWH)': ehsData.electricityConsumed,
+            'Total Gas Consumed (meter cube)': ehsData.gasConsumed,
+            'Water Consumption (US Gallons)': ehsData.waterConsumption,
+            'Number of Paper Sheets Consumed': ehsData.paperSheetsConsumed,
+            'Carbon Footprint': ehsData.carbonFootprint,
+          }
+        default:
+          return {}
+      }
+    } else if (adminData) {
+      switch (category) {
+        case 'working-hours':
+          return {
+            'Total Working Hours of Site (Total of A+B+C+D)': adminData.workingHours.totalSite,
+            'A. Total Working Hours Management (Total of A1+A2)': adminData.workingHours.managementMDM.total,
+            'A1. Overtime Working Hours Management (MDM)': adminData.workingHours.managementMDM.overtime,
+            'A2. Routine Working Hours Management (MDM)': adminData.workingHours.managementMDM.routine,
+            'B. Total Working Hours Contractual (Total of B1+B2)': adminData.workingHours.managementContractual.total,
+            'B1. Overtime Working Hours Contractual': adminData.workingHours.managementContractual.overtime,
+            'B2. Routine Working Hours Contractual': adminData.workingHours.managementContractual.routine,
+            'C. Total Working Hours Non-Management (MDM) (Total of C1+C2)': adminData.workingHours.nonManagementMDM.total,
+            'C1. Overtime Working Hours Non-Management (MDM)': adminData.workingHours.nonManagementMDM.overtime,
+            'C2. Routine Working Hours Non-Management (MDM)': adminData.workingHours.nonManagementMDM.routine,
+            'D. Total Working Hours Non-Management Contractual (Total of D1+D2)': adminData.workingHours.nonManagementContractual.total,
+            'D1. Overtime Working Hours Non-Management Contractual': adminData.workingHours.nonManagementContractual.overtime,
+            'D2. Routine Working Hours Non-Management Contractual': adminData.workingHours.nonManagementContractual.routine,
+          }
+        case 'hr-metrics':
+          return {
+            'Number of Resignations': adminData.hrMetrics.resignations,
+            'Vacant Positions': adminData.hrMetrics.vacantPositions,
+            'Staff Turnover %': adminData.hrMetrics.staffTurnover,
+          }
+        default:
+          return {}
+      }
     }
+    return {}
   }
 
   const categoryData = getCategoryData()
@@ -62,68 +92,141 @@ export default function DataInputForm({ category, ehsData, adminData, onClose, o
   }
 
   const handleSave = () => {
-    const updatedEhsData = { ...ehsData }
-    
-    Object.entries(formData).forEach(([metric, values]) => {
-      switch (metric) {
-        case 'Total Number of Accidents':
-          updatedEhsData.accidents = values
-          break
-        case 'Number of First Aid Cases':
-          updatedEhsData.firstAidCases = values
-          break
-        case 'Number of Medical Cases':
-          updatedEhsData.medicalCases = values
-          break
-        case 'Number of Ill Health Cases':
-          updatedEhsData.illHealthCases = values
-          break
-        case 'Number of Lost Time Accident Cases':
-          updatedEhsData.lostTimeAccidents = values
-          break
-        case 'Number of EHS Walks':
-          updatedEhsData.ehsWalks = values
-          break
-        case 'Number of EHS Risk Assessments':
-          updatedEhsData.ehsRiskAssessments = values
-          break
-        case 'Target Training Hours':
-          updatedEhsData.trainingHours.target = values
-          break
-        case 'Actual Training Hours':
-          updatedEhsData.trainingHours.actual = values
-          break
-        case 'Target Hazard Reporting':
-          updatedEhsData.hazardReporting.target = values
-          break
-        case 'Actual Number of Hazards Reported':
-          updatedEhsData.hazardReporting.actual = values
-          break
-        case 'Actual Near Misses Reported':
-          updatedEhsData.nearMisses = values
-          break
-        case 'Target Leading Indicator Index (LII)':
-          updatedEhsData.leadingIndicatorIndex.target = values
-          break
-        case 'Total Electricity Consumed (KWH)':
-          updatedEhsData.electricityConsumed = values
-          break
-        case 'Total Gas Consumed (meter cube)':
-          updatedEhsData.gasConsumed = values
-          break
-        case 'Water Consumption (US Gallons)':
-          updatedEhsData.waterConsumption = values
-          break
-        case 'Number of Paper Sheets Consumed':
-          updatedEhsData.paperSheetsConsumed = values
-          break
-        case 'Carbon Footprint':
-          updatedEhsData.carbonFootprint = values
-          break
-      }
-    })
+    if (ehsData) {
+      const updatedEhsData = { ...ehsData }
+      
+      Object.entries(formData).forEach(([metric, values]) => {
+        switch (metric) {
+          case 'Total Number of Accidents':
+            updatedEhsData.accidents = values
+            break
+          case 'Number of First Aid Cases':
+            updatedEhsData.firstAidCases = values
+            break
+          case 'Number of Medical Cases':
+            updatedEhsData.medicalCases = values
+            break
+          case 'Number of Ill Health Cases':
+            updatedEhsData.illHealthCases = values
+            break
+          case 'Number of Lost Time Accident Cases':
+            updatedEhsData.lostTimeAccidents = values
+            break
+          case 'Number of EHS Walks':
+            updatedEhsData.ehsWalks = values
+            break
+          case 'Number of EHS Risk Assessments':
+            updatedEhsData.ehsRiskAssessments = values
+            break
+          case 'Target Training Hours':
+            updatedEhsData.trainingHours.target = values
+            break
+          case 'Actual Training Hours':
+            updatedEhsData.trainingHours.actual = values
+            break
+          case 'Target Hazard Reporting':
+            updatedEhsData.hazardReporting.target = values
+            break
+          case 'Actual Number of Hazards Reported':
+            updatedEhsData.hazardReporting.actual = values
+            break
+          case 'Actual Near Misses Reported':
+            updatedEhsData.nearMisses = values
+            break
+          case 'Target Leading Indicator Index (LII)':
+            updatedEhsData.leadingIndicatorIndex.target = values
+            break
+          case 'Total Electricity Consumed (KWH)':
+            updatedEhsData.electricityConsumed = values
+            break
+          case 'Total Gas Consumed (meter cube)':
+            updatedEhsData.gasConsumed = values
+            break
+          case 'Water Consumption (US Gallons)':
+            updatedEhsData.waterConsumption = values
+            break
+          case 'Number of Paper Sheets Consumed':
+            updatedEhsData.paperSheetsConsumed = values
+            break
+          case 'Carbon Footprint':
+            updatedEhsData.carbonFootprint = values
+            break
+        }
+      })
 
-    onSave(updatedEhsData)
+      onSave(updatedEhsData)
+    } else if (adminData) {
+      const partialAdminData: Partial<AdminData> = {
+        workingHours: {
+          totalSite: adminData.workingHours.totalSite,
+          managementMDM: { ...adminData.workingHours.managementMDM },
+          managementContractual: { ...adminData.workingHours.managementContractual },
+          nonManagementMDM: { ...adminData.workingHours.nonManagementMDM },
+          nonManagementContractual: { ...adminData.workingHours.nonManagementContractual }
+        },
+        hrMetrics: { ...adminData.hrMetrics }
+      }
+
+      Object.entries(formData).forEach(([metric, values]) => {
+        if (category === 'working-hours') {
+          switch (metric) {
+            case 'Total Working Hours of Site (Total of A+B+C+D)':
+              partialAdminData.workingHours!.totalSite = values
+              break
+            case 'A. Total Working Hours Management (Total of A1+A2)':
+              partialAdminData.workingHours!.managementMDM.total = values
+              break
+            case 'A1. Overtime Working Hours Management (MDM)':
+              partialAdminData.workingHours!.managementMDM.overtime = values
+              break
+            case 'A2. Routine Working Hours Management (MDM)':
+              partialAdminData.workingHours!.managementMDM.routine = values
+              break
+            case 'B. Total Working Hours Contractual (Total of B1+B2)':
+              partialAdminData.workingHours!.managementContractual.total = values
+              break
+            case 'B1. Overtime Working Hours Contractual':
+              partialAdminData.workingHours!.managementContractual.overtime = values
+              break
+            case 'B2. Routine Working Hours Contractual':
+              partialAdminData.workingHours!.managementContractual.routine = values
+              break
+            case 'C. Total Working Hours Non-Management (MDM) (Total of C1+C2)':
+              partialAdminData.workingHours!.nonManagementMDM.total = values
+              break
+            case 'C1. Overtime Working Hours Non-Management (MDM)':
+              partialAdminData.workingHours!.nonManagementMDM.overtime = values
+              break
+            case 'C2. Routine Working Hours Non-Management (MDM)':
+              partialAdminData.workingHours!.nonManagementMDM.routine = values
+              break
+            case 'D. Total Working Hours Non-Management Contractual (Total of D1+D2)':
+              partialAdminData.workingHours!.nonManagementContractual.total = values
+              break
+            case 'D1. Overtime Working Hours Non-Management Contractual':
+              partialAdminData.workingHours!.nonManagementContractual.overtime = values
+              break
+            case 'D2. Routine Working Hours Non-Management Contractual':
+              partialAdminData.workingHours!.nonManagementContractual.routine = values
+              break
+          }
+        } else if (category === 'hr-metrics') {
+          switch (metric) {
+            case 'Number of Resignations':
+              partialAdminData.hrMetrics!.resignations = values
+              break
+            case 'Vacant Positions':
+              partialAdminData.hrMetrics!.vacantPositions = values
+              break
+            case 'Staff Turnover %':
+              partialAdminData.hrMetrics!.staffTurnover = values
+              break
+          }
+        }
+      })
+
+      onSave(partialAdminData)
+    }
   }
 
   return (
@@ -165,7 +268,7 @@ export default function DataInputForm({ category, ehsData, adminData, onClose, o
                     <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                       {metric}
                     </td>
-                    {months.map((month, index) => {
+                    {months.map((month) => {
                       const monthKey = month.toLowerCase() as keyof MonthlyData
                       const currentValue = formData[metric]?.[monthKey] ?? values[monthKey]
                       return (
@@ -204,4 +307,3 @@ export default function DataInputForm({ category, ehsData, adminData, onClose, o
     </div>
   )
 }
-

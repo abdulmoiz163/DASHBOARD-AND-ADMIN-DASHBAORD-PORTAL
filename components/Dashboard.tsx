@@ -1,19 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { initialEHSData, monthlyDataToArray, months, type EHSData } from '@/lib/data'
+import { initialEHSData, initialAdminData, monthlyDataToArray, months, type EHSData, type AdminData } from '@/lib/data'
 import KPICard from './KPICard'
 import DataTable from './DataTable'
 import ChartCard from './ChartCard'
 import DataInputForm from './DataInputForm'
 import { useAuth } from './AuthProvider'
-import { Edit, TrendingUp, AlertTriangle, Activity } from 'lucide-react'
+import { Edit, TrendingUp, AlertTriangle, Activity, Download, FileText } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function Dashboard() {
   const { isAuthenticated, isAdmin, isSeniorExecutive } = useAuth()
   const router = useRouter()
   const [ehsData, setEhsData] = useState<EHSData>(initialEHSData)
+  const [adminData, setAdminData] = useState<AdminData>(initialAdminData)
   const [showEditForm, setShowEditForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
 
@@ -22,6 +23,26 @@ export default function Dashboard() {
       router.push('/overview')
     }
   }, [isAuthenticated, isAdmin, isSeniorExecutive, router])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/kpi')
+        if (res.ok) {
+          const json = await res.json()
+          if (json?.data) {
+            setEhsData(json.data.ehs || initialEHSData)
+            setAdminData(json.data.admin || initialAdminData)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error)
+      }
+    }
+    if (isAuthenticated && (isAdmin || isSeniorExecutive)) {
+      fetchData()
+    }
+  }, [isAuthenticated, isAdmin, isSeniorExecutive])
 
   if (!isAuthenticated || (!isAdmin && !isSeniorExecutive)) {
     return null
@@ -34,6 +55,35 @@ export default function Dashboard() {
   const totalElectricity = monthlyDataToArray(ehsData.electricityConsumed).reduce((a, b) => a + b, 0)
   const totalGas = monthlyDataToArray(ehsData.gasConsumed).reduce((a, b) => a + b, 0)
   const totalWater = monthlyDataToArray(ehsData.waterConsumption).reduce((a, b) => a + b, 0)
+
+  // Calculate admin KPIs
+  const totalWorkingHours = monthlyDataToArray(adminData.workingHours.totalSite).reduce((a, b) => a + b, 0)
+  const totalResignations = monthlyDataToArray(adminData.hrMetrics.resignations).reduce((a, b) => a + b, 0)
+  const totalVacancies = monthlyDataToArray(adminData.hrMetrics.vacantPositions).reduce((a, b) => a + b, 0)
+  const avgTurnover = monthlyDataToArray(adminData.hrMetrics.staffTurnover).reduce((a, b) => a + b, 0) / 12
+
+  // Comparison calculations for color-coded KPIs
+  const getTrend = (current: number, previous: number) => {
+    if (current > previous) return 'up'
+    if (current < previous) return 'down'
+    return 'neutral'
+  }
+
+  const currentMonth = new Date().getMonth()
+  const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1
+  const sameMonthLastYear = currentMonth
+
+  const accidentsCurrent = monthlyDataToArray(ehsData.accidents)[currentMonth]
+  const accidentsLast = monthlyDataToArray(ehsData.accidents)[lastMonth]
+  const accidentsLastYear = monthlyDataToArray(ehsData.accidents)[sameMonthLastYear]
+
+  const hazardsCurrent = monthlyDataToArray(ehsData.hazardReporting.actual)[currentMonth]
+  const hazardsLast = monthlyDataToArray(ehsData.hazardReporting.actual)[lastMonth]
+  const hazardsLastYear = monthlyDataToArray(ehsData.hazardReporting.actual)[sameMonthLastYear]
+
+  const workingHoursCurrent = monthlyDataToArray(adminData.workingHours.totalSite)[currentMonth]
+  const workingHoursLast = monthlyDataToArray(adminData.workingHours.totalSite)[lastMonth]
+  const workingHoursLastYear = monthlyDataToArray(adminData.workingHours.totalSite)[sameMonthLastYear]
 
   return (
     <div className="p-8 bg-gray-50 dark:bg-gray-950 min-h-screen">
@@ -48,19 +98,19 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* KPI Cards */}
+        {/* KPI Cards - Color-coded based on comparisons */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <KPICard
             title="Total Accidents"
             value={totalAccidents}
             icon={<AlertTriangle className="w-6 h-6" />}
-            trend="down"
+            trend={getTrend(accidentsCurrent, accidentsLast)}
           />
           <KPICard
             title="Hazards Reported"
             value={totalHazards}
             icon={<Activity className="w-6 h-6" />}
-            trend="up"
+            trend={getTrend(hazardsCurrent, hazardsLast)}
           />
           <KPICard
             title="Near Misses"
@@ -259,6 +309,135 @@ export default function Dashboard() {
               labels={months}
             />
           </div>
+
+          {/* Admin Data Tables - Only for Senior Executive and Admin */}
+          {isSeniorExecutive && (
+            <>
+              {/* Working Hours Table */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Working Hours
+                  </h2>
+                  <div className="flex gap-2">
+                    <a
+                      href="/api/kpi/export"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                    >
+                      <Download className="w-4 h-4" />
+                      Export CSV
+                    </a>
+                    <a
+                      href="/api/export/pdf"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Export PDF
+                    </a>
+                  </div>
+                </div>
+                <DataTable
+                  data={[
+                    {
+                      label: 'Total Working Hours of Site (Total of A+B+C+D)',
+                      values: monthlyDataToArray(adminData.workingHours.totalSite)
+                    },
+                    {
+                      label: 'A. Total Working Hours Management (Total of A1+A2)',
+                      values: monthlyDataToArray(adminData.workingHours.managementMDM.total)
+                    },
+                    {
+                      label: 'A1. Overtime Working Hours Management (MDM)',
+                      values: monthlyDataToArray(adminData.workingHours.managementMDM.overtime)
+                    },
+                    {
+                      label: 'A2. Routine Working Hours Management (MDM)',
+                      values: monthlyDataToArray(adminData.workingHours.managementMDM.routine)
+                    },
+                    {
+                      label: 'B. Total Working Hours Contractual (Total of B1+B2)',
+                      values: monthlyDataToArray(adminData.workingHours.managementContractual.total)
+                    },
+                    {
+                      label: 'B1. Overtime Working Hours Contractual',
+                      values: monthlyDataToArray(adminData.workingHours.managementContractual.overtime)
+                    },
+                    {
+                      label: 'B2. Routine Working Hours Contractual',
+                      values: monthlyDataToArray(adminData.workingHours.managementContractual.routine)
+                    },
+                    {
+                      label: 'C. Total Working Hours Non-Management (MDM) (Total of C1+C2)',
+                      values: monthlyDataToArray(adminData.workingHours.nonManagementMDM.total)
+                    },
+                    {
+                      label: 'C1. Overtime Working Hours Non-Management (MDM)',
+                      values: monthlyDataToArray(adminData.workingHours.nonManagementMDM.overtime)
+                    },
+                    {
+                      label: 'C2. Routine Working Hours Non-Management (MDM)',
+                      values: monthlyDataToArray(adminData.workingHours.nonManagementMDM.routine)
+                    },
+                    {
+                      label: 'D. Total Working Hours Non-Management Contractual (Total of D1+D2)',
+                      values: monthlyDataToArray(adminData.workingHours.nonManagementContractual.total)
+                    },
+                    {
+                      label: 'D1. Overtime Working Hours Non-Management Contractual',
+                      values: monthlyDataToArray(adminData.workingHours.nonManagementContractual.overtime)
+                    },
+                    {
+                      label: 'D2. Routine Working Hours Non-Management Contractual',
+                      values: monthlyDataToArray(adminData.workingHours.nonManagementContractual.routine)
+                    }
+                  ]}
+                  labels={months}
+                />
+              </div>
+
+              {/* HR Metrics Table */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    HR Metrics
+                  </h2>
+                  <div className="flex gap-2">
+                    <a
+                      href="/api/kpi/export"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                    >
+                      <Download className="w-4 h-4" />
+                      Export CSV
+                    </a>
+                    <a
+                      href="/api/export/pdf"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Export PDF
+                    </a>
+                  </div>
+                </div>
+                <DataTable
+                  data={[
+                    {
+                      label: 'Number of Resignations',
+                      values: monthlyDataToArray(adminData.hrMetrics.resignations)
+                    },
+                    {
+                      label: 'Vacant Positions',
+                      values: monthlyDataToArray(adminData.hrMetrics.vacantPositions)
+                    },
+                    {
+                      label: 'Staff Turnover %',
+                      values: monthlyDataToArray(adminData.hrMetrics.staffTurnover)
+                    }
+                  ]}
+                  labels={months}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
 

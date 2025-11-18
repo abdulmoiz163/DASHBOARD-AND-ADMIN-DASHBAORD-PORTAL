@@ -49,7 +49,26 @@ function parseCSVToKPI(rows: any[]): any {
     } else if (metric.startsWith('c.') || metric.includes('total working hours non-management (mdm)')) {
       kpiPartial.workingHours.nonManagementMDM = kpiPartial.workingHours.nonManagementMDM || {}
       kpiPartial.workingHours.nonManagementMDM.total = monthly
-    } else if (metric.startsWith('d1
+    } else if (metric.startsWith('d1') || metric.includes('overtime working hours non-management (contractual)')) {
+      kpiPartial.workingHours.nonManagementContractual = kpiPartial.workingHours.nonManagementContractual || {}
+      kpiPartial.workingHours.nonManagementContractual.overtime = monthly
+    } else if (metric.startsWith('d2') || metric.includes('routine working hours non-management (contractual)')) {
+      kpiPartial.workingHours.nonManagementContractual = kpiPartial.workingHours.nonManagementContractual || {}
+      kpiPartial.workingHours.nonManagementContractual.routine = monthly
+    } else if (metric.startsWith('d.') || metric.includes('total working hours non-management (contractual)')) {
+      kpiPartial.workingHours.nonManagementContractual = kpiPartial.workingHours.nonManagementContractual || {}
+      kpiPartial.workingHours.nonManagementContractual.total = monthly
+    } else if (metric.includes('resignations')) {
+      kpiPartial.hrMetrics.resignations = monthly
+    } else if (metric.includes('vacant positions')) {
+      kpiPartial.hrMetrics.vacantPositions = monthly
+    } else if (metric.includes('staff turnover')) {
+      kpiPartial.hrMetrics.staffTurnover = monthly
+    }
+  }
+
+  return kpiPartial
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,6 +89,8 @@ export async function POST(request: NextRequest) {
     const parsed = parseCSVToKPI(result.data as any[])
 
     const updated = updateKPIData(parsed)
-    return NextResponse.json({ data: updated, message: 'KPI data uploaded successfully' })
+    return NextResponse.json({ data: updated, message: 'Admin data uploaded successfully' })
   } catch (e) {
-    return NextResponse.json({ error: 'Internal server error' }, { status:
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

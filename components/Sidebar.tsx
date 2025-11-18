@@ -6,6 +6,7 @@ import { useAuth } from './AuthProvider'
 import { Moon, Sun } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import Logo from './Logo'
 
 export default function Sidebar() {
   const { theme, toggleTheme } = useTheme()
@@ -20,24 +21,22 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-          KPI Dashboard
-        </h1>
+      <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-center">
+        <Logo className="h-8 w-auto text-gray-900 dark:text-white" />
       </div>
       
       {user && (
         <div className="p-4 border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-              {user.name.charAt(0).toUpperCase()}
+              {user?.name?.charAt(0)?.toUpperCase() || '?'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                {user.name}
+                {user?.name || 'User'}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                {user.role.replace('_', ' ')}
+                {user?.role?.replace('_', ' ') || 'Unknown'}
               </p>
             </div>
           </div>
